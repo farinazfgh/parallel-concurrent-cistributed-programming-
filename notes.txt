@@ -1,0 +1,16 @@
+sum = sum1+sum2 ;
+sum 1 lower half
+sum 2 upper half
+we need both sum1 and sum2 to be able to do sum
+# FINISH
+    ASYNCH
+        sum1= sum of lower half
+        sum2= sum of upper half
+# END FINISH
+sum = sum1+sum2
+this way we make sure by the time we do sum, sum1 and sum2 are ready
+and we can do sum1 in one core and sum2 by another
+Fork-join the most popular way to implement multicore programming in java
+
+
+
