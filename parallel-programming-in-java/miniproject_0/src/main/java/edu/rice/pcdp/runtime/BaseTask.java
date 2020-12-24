@@ -25,7 +25,7 @@ public abstract class BaseTask extends CountedCompleter<Void> {
      * Fetch the immediately enclosing finish of a task.
      *
      * @return The immediately enclosing finish of the task this is called on.
-     *         For finish tasks, returns this.
+     * For finish tasks, returns this.
      */
     public abstract FinishTask ief();
 
@@ -138,8 +138,8 @@ public abstract class BaseTask extends CountedCompleter<Void> {
     }
 
     /**
-     * @author Shams Imam (shams@rice.edu)
      * @param <R> Return type for this future.
+     * @author Shams Imam (shams@rice.edu)
      */
     public static final class FutureTask<R> extends BaseTask {
 
@@ -164,26 +164,26 @@ public abstract class BaseTask extends CountedCompleter<Void> {
          * Future for this task.
          */
         private final CompletableFuture<R> completableFuture =
-            new CompletableFuture<R>() {
-                @Override
-                public boolean cancel(final boolean mayInterruptIfRunning) {
-                    return cancellationFlag.compareAndSet(false, true)
-                        && super.cancel(mayInterruptIfRunning);
-                }
-            };
+                new CompletableFuture<R>() {
+                    @Override
+                    public boolean cancel(final boolean mayInterruptIfRunning) {
+                        return cancellationFlag.compareAndSet(false, true)
+                                && super.cancel(mayInterruptIfRunning);
+                    }
+                };
 
         /**
          * Constructor for FutureTask.
          *
-         * @param setRunnable User-defined body of this task.
+         * @param setRunnable                   User-defined body of this task.
          * @param setImmediatelyEnclosingFinish Finish scope for this task.
-         * @param rethrowException Whether to respond to caught exceptions by
-         *        re-throwing.
+         * @param rethrowException              Whether to respond to caught exceptions by
+         *                                      re-throwing.
          */
         public FutureTask(
-            final Callable<R> setRunnable,
-            final FinishTask setImmediatelyEnclosingFinish,
-            final boolean rethrowException) {
+                final Callable<R> setRunnable,
+                final FinishTask setImmediatelyEnclosingFinish,
+                final boolean rethrowException) {
             super();
             if (setImmediatelyEnclosingFinish == null) {
                 throw new IllegalStateException(

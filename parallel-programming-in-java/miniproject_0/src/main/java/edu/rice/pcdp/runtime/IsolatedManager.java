@@ -1,7 +1,7 @@
 package edu.rice.pcdp.runtime;
 
-import java.util.TreeSet;
 import java.util.Comparator;
+import java.util.TreeSet;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -21,7 +21,7 @@ public final class IsolatedManager {
     private final int nLocks = 64;
     /**
      * The Java locks that are actually used to implement isolated mutual
-     * exclusion.
+     * exclusion
      */
     private final Lock[] locks = new Lock[nLocks];
 
@@ -38,7 +38,7 @@ public final class IsolatedManager {
      * Compute an index into the locks array for the provided object.
      *
      * @param obj The object to compute a lock index for use in object-based
-     *        isolation.
+     *            isolation.
      * @return Lock index for obj.
      */
     private int lockIndexFor(final Object obj) {

@@ -69,7 +69,7 @@ public final class MultiException extends RuntimeException {
 
     /**
      * Getter for wrapped exceptions.
-     * 
+     *
      * @return The exceptions wrapped
      */
     public List<Throwable> getExceptions() {
