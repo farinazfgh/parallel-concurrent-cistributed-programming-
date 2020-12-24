@@ -8,10 +8,6 @@ import java.util.concurrent.CountedCompleter;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-/**
- * @author Shams Imam (shams@rice.edu)
- * @author Max Grossman (jmg3@rice.edu)
- */
 public abstract class BaseTask extends CountedCompleter<Void> {
 
     /**

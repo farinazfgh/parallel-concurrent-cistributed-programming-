@@ -6,7 +6,7 @@
     <artifactId>miniproject_0</artifactId>
     <packaging>jar</packaging>
     <version>0.0</version>
-    <name>miniproject_0</name>
+    <name>parallel-programming-in-java</name>
 
     <properties>
         <pcdp.version>0.0.4-SNAPSHOT</pcdp.version>
