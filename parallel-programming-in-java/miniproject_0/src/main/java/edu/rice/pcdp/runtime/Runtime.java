@@ -1,64 +1,107 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by Fernflower decompiler)
-//
-
 package edu.rice.pcdp.runtime;
 
 import edu.rice.pcdp.config.Configuration;
 import edu.rice.pcdp.config.SystemProperty;
-import edu.rice.pcdp.runtime.BaseTask.FinishTask;
-import edu.rice.pcdp.runtime.BaseTask.FutureTask;
-import java.util.Stack;
+
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 
-public final class Runtime {
-    private static final ThreadLocal<Stack<BaseTask>> threadLocalTaskStack = new ThreadLocal<Stack<BaseTask>>() {
-        protected Stack<BaseTask> initialValue() {
-            return new Stack();
-        }
-    };
-    private static ForkJoinPool taskPool;
+/**
+ * @author Shams Imam (shams@rice.edu)
+ * @author Max Grossman (jmg3@rice.edu)
+ */
 
+public final class Runtime {
+    /**
+     * Default constructor.
+     */
     private Runtime() {
     }
 
-    public static void resizeWorkerThreads(int numWorkers) throws InterruptedException {
-        taskPool.shutdown();
-        boolean terminated = taskPool.awaitTermination(10L, TimeUnit.SECONDS);
+    /**
+     * For each thread, a stack listing the tasks executing on this thread.
+     */
+    private static final ThreadLocal<Deque<BaseTask>> threadLocalTaskStack =
+        new ThreadLocal<Deque<BaseTask>>() {
+            @Override
+            protected Deque<BaseTask> initialValue() {
+                return new ArrayDeque<>();
+            }
+        };
 
-        assert terminated;
+    /**
+     * The thread pool backing this instance of Runtime.
+     */
+    private static ForkJoinPool taskPool = new ForkJoinPool(
+            Configuration.readIntProperty(SystemProperty.numWorkers));
+
+    /**
+     * A method for altering the number of worker threads used by PCDP at
+     * runtime. It is the programmer's responsibility to ensure that no tasks
+     * are executing or pending on the runtime when this call is made.
+     *
+     * @param numWorkers The number of workers to switch to using.
+     * @throws InterruptedException An error occurs shutting down the existing
+     *         runtime instance.
+     */
+    public static void resizeWorkerThreads(final int numWorkers)
+            throws InterruptedException {
+        taskPool.shutdown();
+        boolean terminated = taskPool.awaitTermination(10, TimeUnit.SECONDS);
+        assert (terminated);
 
         SystemProperty.numWorkers.set(numWorkers);
         taskPool = new ForkJoinPool(numWorkers);
     }
 
+    /**
+     * Get the current task of the current thread.
+     * @return Currently executing task.
+     */
     public static BaseTask currentTask() {
-        Stack<BaseTask> taskStack = (Stack)threadLocalTaskStack.get();
-        return taskStack.isEmpty() ? null : (BaseTask)taskStack.peek();
+        final Deque<BaseTask> taskStack = Runtime.threadLocalTaskStack.get();
+        if (taskStack.isEmpty()) {
+            return null;
+        } else {
+            return taskStack.peek();
+        }
     }
 
-    public static void pushTask(BaseTask task) {
-        ((Stack)threadLocalTaskStack.get()).push(task);
+    /**
+     * Track the passed task as the currently executing task for this thread.
+     * @param task Currently executing task
+     */
+    public static void pushTask(final BaseTask task) {
+        Runtime.threadLocalTaskStack.get().push(task);
     }
 
+    /**
+     * Remove the top of the task-tracking stack for the current thread.
+     */
     public static void popTask() {
-        ((Stack)threadLocalTaskStack.get()).pop();
+        Runtime.threadLocalTaskStack.get().pop();
     }
 
-    public static void submitTask(BaseTask task) {
+    /**
+     * Run the provided task on the thread pool backing this runtime.
+     * @param task Task to make eligible for execution.
+     */
+    public static void submitTask(final BaseTask task) {
         taskPool.execute(task);
     }
 
+    /**
+     * Print some basic runtime statistics.
+     */
     public static void showRuntimeStats() {
-        System.out.println("Runtime Stats (" + Configuration.BUILD_INFO + "): ");
+        System.out.println("Runtime Stats (" + Configuration.BUILD_INFO
+                + "): ");
         System.out.println("   " + taskPool.toString());
-        System.out.println("   # finishes = " + FinishTask.TASK_COUNTER.get());
-        System.out.println("   # asyncs = " + FutureTask.TASK_COUNTER.get());
-    }
-
-    static {
-        taskPool = new ForkJoinPool(Configuration.readIntProperty(SystemProperty.numWorkers));
+        System.out.println("   # finishes = "
+                + BaseTask.FinishTask.TASK_COUNTER.get());
+        System.out.println("   # asyncs = "
+                + BaseTask.FutureTask.TASK_COUNTER.get());
     }
 }

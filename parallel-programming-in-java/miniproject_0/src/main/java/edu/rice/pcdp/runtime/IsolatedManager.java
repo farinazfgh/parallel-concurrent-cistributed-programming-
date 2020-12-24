@@ -1,83 +1,116 @@
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by Fernflower decompiler)
-//
-
 package edu.rice.pcdp.runtime;
 
-import java.util.Comparator;
-import java.util.Iterator;
 import java.util.TreeSet;
+import java.util.Comparator;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+/**
+ * A wrapper for managing Java locks used to implement global and object-based
+ * isolation.
+ *
+ * @author Shams Imam (shams@rice.edu)
+ * @author Max Grossman (jmg3@rice.edu)
+ */
 public final class IsolatedManager {
+    /**
+     * The number of locks to use to implement hash-based, object-based
+     * isolation. More locks reduce contention, but less locks reduce memory
+     * consumption.
+     */
     private final int nLocks = 64;
-    private final Lock[] locks = new Lock[64];
+    /**
+     * The Java locks that are actually used to implement isolated mutual
+     * exclusion.
+     */
+    private final Lock[] locks = new Lock[nLocks];
 
+    /**
+     * Default constructor, initialized backing locks.
+     */
     public IsolatedManager() {
-        for(int i = 0; i < this.locks.length; ++i) {
-            this.locks[i] = new ReentrantLock();
+        for (int i = 0; i < locks.length; i++) {
+            locks[i] = new ReentrantLock();
         }
-
     }
 
-    private int lockIndexFor(Object obj) {
-        return Math.abs(obj.hashCode()) % 64;
+    /**
+     * Compute an index into the locks array for the provided object.
+     *
+     * @param obj The object to compute a lock index for use in object-based
+     *        isolation.
+     * @return Lock index for obj.
+     */
+    private int lockIndexFor(final Object obj) {
+        return Math.abs(obj.hashCode()) % nLocks;
     }
 
-    private TreeSet<Object> createSortedObjects(Object[] objects) {
-        TreeSet<Object> sorted = new TreeSet(new Comparator<Object>() {
-            public int compare(Object o1, Object o2) {
-                return IsolatedManager.this.lockIndexFor(o1) - IsolatedManager.this.lockIndexFor(o2);
+    /**
+     * Sort the provided list of objects by the lock indices they will need to
+     * acquire for object-based isolation.
+     *
+     * @param objects Objects to implement object-based isolation for.
+     * @return Sorted set of objects
+     */
+    private TreeSet<Object> createSortedObjects(final Object[] objects) {
+        TreeSet<Object> sorted = new TreeSet<Object>(new Comparator<Object>() {
+            @Override
+            public int compare(final Object o1, final Object o2) {
+                return lockIndexFor(o1) - lockIndexFor(o2);
             }
         });
-        Object[] var3 = objects;
-        int var4 = objects.length;
 
-        for(int var5 = 0; var5 < var4; ++var5) {
-            Object obj = var3[var5];
+        for (Object obj : objects) {
             sorted.add(obj);
         }
 
         return sorted;
     }
 
+    /**
+     * For global isolation, acquire all locks.
+     */
     public void acquireAllLocks() {
-        for(int i = 0; i < this.locks.length; ++i) {
-            this.locks[i].lock();
+        for (int i = 0; i < locks.length; i++) {
+            locks[i].lock();
         }
-
     }
 
+    /**
+     * For global isolation, release all locks.
+     */
     public void releaseAllLocks() {
-        for(int i = this.locks.length - 1; i >= 0; --i) {
-            this.locks[i].unlock();
+        for (int i = locks.length - 1; i >= 0; i--) {
+            locks[i].unlock();
         }
-
     }
 
-    public void acquireLocksFor(Object[] objects) {
-        TreeSet<Object> sorted = this.createSortedObjects(objects);
-        Iterator var3 = sorted.iterator();
+    /**
+     * For object-based isolation, acquire the locks in this isolated manager
+     * corresponding to the provided objects.
+     *
+     * @param objects Objects to perform object-based isolation on.
+     */
+    public void acquireLocksFor(final Object[] objects) {
+        final TreeSet<Object> sorted = createSortedObjects(objects);
 
-        while(var3.hasNext()) {
-            Object obj = var3.next();
-            int lockIndex = this.lockIndexFor(obj);
-            this.locks[lockIndex].lock();
+        for (Object obj : sorted) {
+            final int lockIndex = lockIndexFor(obj);
+            locks[lockIndex].lock();
         }
-
     }
 
-    public void releaseLocksFor(Object[] objects) {
-        TreeSet<Object> sorted = this.createSortedObjects(objects);
-        Iterator var3 = sorted.iterator();
-
-        while(var3.hasNext()) {
-            Object obj = var3.next();
-            int lockIndex = this.lockIndexFor(obj);
-            this.locks[lockIndex].unlock();
+    /**
+     * After completing a region of object-based isolation, release the same
+     * locks that were originally acquired for the provided objects.
+     *
+     * @param objects Objects to perform object-based isolation on
+     */
+    public void releaseLocksFor(final Object[] objects) {
+        final TreeSet<Object> sorted = createSortedObjects(objects);
+        for (Object obj : sorted) {
+            final int lockIndex = lockIndexFor(obj);
+            locks[lockIndex].unlock();
         }
-
     }
 }
